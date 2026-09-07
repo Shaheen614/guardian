@@ -1,0 +1,21 @@
+{
+  "name": "guardian",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Guardian — an Alexa+ MCP agent that watches the front door and looks out for the people who live behind it, built on Ring and Google Gemini.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:mcp": "npm run dev --workspace=@guardian/mcp-server",
+    "dev:agent": "npm run dev --workspace=@guardian/agent-gateway",
+    "build": "npm run build --workspace=@guardian/mcp-server && npm run build --workspace=@guardian/agent-gateway",
+    "seed:baseline": "npm run seed:baseline --workspace=@guardian/mcp-server",
+    "demo:seed": "npm run demo:seed --workspace=@guardian/mcp-server",
+    "smoke-test": "node scripts/smoke-test.mjs"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "license": "MIT"
+}

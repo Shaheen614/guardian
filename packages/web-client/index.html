@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guardian — front door console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="console">
+    <header class="nameplate">
+      <div class="nameplate-text">
+        <h1>Guardian</h1>
+        <p class="subtitle">watching the front door</p>
+      </div>
+      <div class="status" id="statusIndicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusLabel">connecting…</span>
+      </div>
+    </header>
+
+    <section class="orb-stage">
+      <button class="orb" id="orbButton" aria-label="Hold to talk to Guardian">
+        <span class="orb-ring"></span>
+        <span class="orb-core"></span>
+      </button>
+      <p class="orb-hint" id="orbHint">Tap to talk, or type below</p>
+    </section>
+
+    <form class="type-row" id="typeForm">
+      <input
+        type="text"
+        id="typeInput"
+        placeholder="Ask who was at the door…"
+        autocomplete="off"
+      />
+      <button type="submit" aria-label="Send">→</button>
+    </form>
+
+    <section class="log" aria-live="polite">
+      <div class="log-heading">Visitor log</div>
+      <ol class="log-list" id="logList"></ol>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

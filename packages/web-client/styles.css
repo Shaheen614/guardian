@@ -1,0 +1,249 @@
+:root {
+  --bg: #12151a;
+  --panel: #1b2028;
+  --panel-edge: #262d38;
+  --porch: #e4a94a;
+  --porch-dim: #7a5f30;
+  --night: #4c7a82;
+  --alert: #b0533d;
+  --text: #f0ebdf;
+  --text-muted: #8b93a0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at 50% -10%, #1a2029 0%, var(--bg) 55%);
+  color: var(--text);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.console {
+  width: 100%;
+  max-width: 440px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 22px;
+  padding: 28px 26px 22px;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
+}
+
+.nameplate {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.nameplate h1 {
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 28px;
+  margin: 0;
+  letter-spacing: 0.2px;
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  padding-top: 6px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background 0.3s ease;
+}
+
+.status-dot.online {
+  background: var(--porch);
+  box-shadow: 0 0 8px 1px rgba(228, 169, 74, 0.6);
+}
+
+.status-dot.alert {
+  background: var(--alert);
+  box-shadow: 0 0 8px 1px rgba(176, 83, 61, 0.6);
+}
+
+.orb-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 0 22px;
+}
+
+.orb {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.orb-core {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f3cf8e, var(--porch) 65%, var(--porch-dim));
+  box-shadow: 0 0 30px 4px rgba(228, 169, 74, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--panel-edge);
+}
+
+.orb.listening .orb-ring {
+  border-color: var(--night);
+  animation: pulse 1.4s ease-out infinite;
+}
+
+.orb.listening .orb-core {
+  transform: scale(1.06);
+}
+
+.orb.speaking .orb-ring {
+  border-color: var(--porch);
+  animation: pulse 0.9s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 122, 130, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgba(76, 122, 130, 0);
+  }
+}
+
+.orb-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.type-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.type-row input {
+  flex: 1;
+  background: #10141a;
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  padding: 11px 13px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14.5px;
+}
+
+.type-row input::placeholder {
+  color: var(--text-muted);
+}
+
+.type-row input:focus,
+.orb:focus-visible,
+.type-row button:focus-visible {
+  outline: 2px solid var(--night);
+  outline-offset: 2px;
+}
+
+.type-row button {
+  width: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-edge);
+  background: #10141a;
+  color: var(--porch);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.log {
+  border-top: 1px solid var(--panel-edge);
+  padding-top: 16px;
+}
+
+.log-heading {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.log-entry {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #20262f;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-time {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  padding-top: 1px;
+}
+
+.log-entry.user .log-message {
+  color: var(--text);
+}
+
+.log-entry.assistant .log-message {
+  color: #cdd6c8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb.listening .orb-ring,
+  .orb.speaking .orb-ring {
+    animation: none;
+  }
+}
