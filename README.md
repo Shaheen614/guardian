@@ -62,6 +62,45 @@ something's worth a check-in, without needing you to open an app first.
 - **`packages/web-client`** — a voice/chat front end (Web Speech API) styled
   as a front-door console, standing in for the Echo device.
 
+## Getting this onto GitHub
+
+The repo is already git-initialized with one commit. To publish it:
+
+```bash
+# Create a new empty repo on github.com first (no README/license — you
+# already have both), then:
+git branch -M main
+git remote add origin https://github.com/<your-username>/guardian.git
+git push -u origin main
+```
+
+Afterward, on the repo's GitHub page, open the gear icon next to "About"
+(top right) and set the license there too — the hackathon requires the
+license visible in the About section specifically, not just as a file in
+the code.
+
+## Recording the demo
+
+See `DEMO_SCRIPT.md` for a shot-by-shot script timed to fit the 3-minute
+cap. Before recording, run:
+
+```bash
+npm run demo:seed
+```
+
+This seeds the baseline so `check_household_activity_pattern` reliably
+returns "unusually quiet" the moment you ask, regardless of what time you
+actually record — see the script's comments for how.
+
+## Submission materials
+
+- `SUBMISSION.md` — a draft of the Devpost project description and the
+  required product-feedback answers, ready to personalize with your actual
+  experience.
+- `FRICTION_LOG.md` — a template for the optional friction log (worth up
+  to a 10% judging bonus) — fill it in live as you hit real setup snags.
+- `DEMO_SCRIPT.md` — the video script above.
+
 ## Verifying your setup
 
 After `npm install` and setting up `.env`, run:
@@ -133,10 +172,14 @@ inside the free tier's rate limits during a demo.
   package folder, not the repo root — a plain `dotenv/config` would
   silently miss your `.env`. This must stay the first import in any
   entrypoint file; see the comment in `env.ts` for why.
-- **`notify_caregiver`** logs to the console instead of sending a real
-  SMS/push notification. Wiring up a provider (Twilio, SNS, etc.) is a
-  small, mechanical addition — left out of v1 so the demo doesn't depend on
-  a second paid account.
+- **`notify_caregiver`** sends a real, free push notification via
+  [ntfy.sh](https://ntfy.sh) if `NTFY_TOPIC` is set in `.env`, otherwise
+  falls back to logging locally. No account or card needed either way —
+  see `.env.example` for setup. Pick a hard-to-guess topic name, since
+  ntfy topics aren't private by name, just by obscurity.
+- **Quiet hours** (`QUIET_HOURS_START` / `QUIET_HOURS_END` in `.env`) let
+  you mark a window (e.g. overnight) that's never evaluated for anomalies,
+  regardless of what the baseline says.
 - **Anomaly baseline** starts empty on a fresh checkout. `npm run
   seed:baseline` fills in 14 days of plausible mock activity so
   `check_household_activity_pattern` has something to compare against
