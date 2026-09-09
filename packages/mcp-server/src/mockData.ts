@@ -10,6 +10,32 @@ export const MOCK_SNAPSHOT_BASE64 =
 const CAMERAS = ["Front Door", "Driveway"];
 const TYPES: DoorEventType[] = ["motion", "doorbell_press", "package", "vehicle"];
 
+// Grounding text for each mock event type, since the placeholder image
+// above has no real visual content for Gemini to describe. Rather than
+// asking Gemini to hallucinate details from a blank pixel (which produces
+// weak, incoherent answers — exactly the wrong thing to have happen on
+// camera in a demo), mock-mode analysis passes one of these as scene
+// context and asks Gemini to phrase it naturally. Real mode ignores this
+// entirely and analyzes an actual snapshot's real pixels instead.
+const SCENE_HINTS: Record<DoorEventType, string[]> = {
+  doorbell_press: [
+    "A person in a delivery uniform presses the doorbell, holding a small package.",
+    "An adult presses the doorbell and steps back, waiting, no packages visible.",
+  ],
+  motion: [
+    "Motion is triggered by someone walking up the front path toward the door.",
+    "Motion is triggered by a person briefly passing in front of the camera without stopping.",
+  ],
+  package: [
+    "A delivery driver sets a medium-sized box on the doormat and walks away without ringing.",
+    "A small package is left leaning against the front door, no one currently in frame.",
+  ],
+  vehicle: [
+    "A delivery van pulls into the driveway and parks.",
+    "A car briefly slows near the driveway, then continues on without stopping.",
+  ],
+};
+
 function randomFrom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -22,12 +48,14 @@ export function generateMockEvent(atHour?: number): DoorEvent {
   if (typeof atHour === "number") {
     timestamp.setHours(atHour, Math.floor(Math.random() * 60), 0, 0);
   }
+  const type = randomFrom(TYPES);
   return {
     id: `mock-${Date.now()}-${mockCounter}`,
-    type: randomFrom(TYPES),
+    type,
     cameraName: randomFrom(CAMERAS),
     timestamp: timestamp.toISOString(),
     snapshotBase64: MOCK_SNAPSHOT_BASE64,
+    mockSceneHint: randomFrom(SCENE_HINTS[type]),
   };
 }
 
@@ -51,12 +79,14 @@ export function generateMockDay(date: Date): DoorEvent[] {
     const ts = new Date(date);
     ts.setHours(hour, Math.floor(Math.random() * 60), 0, 0);
     mockCounter += 1;
+    const type = randomFrom(TYPES);
     return {
       id: `mock-hist-${ts.getTime()}-${mockCounter}`,
-      type: randomFrom(TYPES),
+      type,
       cameraName: randomFrom(CAMERAS),
       timestamp: ts.toISOString(),
       snapshotBase64: MOCK_SNAPSHOT_BASE64,
+      mockSceneHint: randomFrom(SCENE_HINTS[type]),
     };
   });
 }

@@ -16,6 +16,7 @@ export interface DoorEvent {
   timestamp: string; // ISO 8601
   snapshotBase64?: string; // present when a snapshot was captured/analyzed
   description?: string; // filled in once Gemini has looked at it
+  mockSceneHint?: string; // mock mode only — grounding text for vision analysis, since the placeholder image has no real content to see
 }
 
 export interface HourlyBaseline {
@@ -45,7 +46,15 @@ async function writeJson(file: string, data: unknown) {
 
 export async function appendEvent(event: DoorEvent): Promise<void> {
   const events = await readJson<DoorEvent[]>(EVENTS_FILE, []);
-  events.push(event);
+  const last = events[events.length - 1];
+  if (last && last.id === event.id) {
+    // Same event as before (e.g. a cached "latest event" returned again, or
+    // an enriched version with a description added after vision analysis)
+    // — update it in place rather than logging a duplicate.
+    events[events.length - 1] = event;
+  } else {
+    events.push(event);
+  }
   // Keep the log bounded — this is a demo store, not a production database.
   const trimmed = events.slice(-500);
   await writeJson(EVENTS_FILE, trimmed);

@@ -1,4 +1,5 @@
 import type { DoorEvent } from "./store.js";
+import { getLatestEvent, listRecentEvents } from "./store.js";
 import { generateMockEvent, MOCK_SNAPSHOT_BASE64 } from "../mockData.js";
 
 const RING_MODE = (process.env.RING_MODE ?? "mock").toLowerCase();
@@ -93,14 +94,38 @@ export async function listRecentRingEventsReal(limit: number): Promise<DoorEvent
 // Every MCP tool calls these two functions and never touches RING_MODE
 // directly, so flipping real/mock is a one-line .env change.
 
+const MOCK_EVENT_FRESHNESS_MS = 2 * 60 * 1000; // treat a mock event as "still current" for 2 minutes
+
 export async function fetchLatestDoorbellEvent(): Promise<DoorEvent | undefined> {
   if (RING_MODE === "real") return getLatestDoorbellEventReal();
+
+  // Real Ring polling only returns a *new* event when something actually
+  // happened — it doesn't invent a fresh visitor every time you ask "who
+  // was at the door". If we fabricated a brand-new random event on every
+  // call, two things would break: repeated questions in the same
+  // conversation would get a different, inconsistent answer each time, and
+  // (more importantly) each call permanently inflates that hour's logged
+  // event count — which would silently defeat the anomaly baseline the
+  // demo scenario depends on. So: reuse the existing latest event if it's
+  // still fresh, and only fabricate a new one once enough time has passed.
+  const existing = await getLatestEvent();
+  if (existing && Date.now() - new Date(existing.timestamp).getTime() < MOCK_EVENT_FRESHNESS_MS) {
+    return existing;
+  }
   return generateMockEvent();
 }
 
 export async function fetchRecentEvents(limit = 10): Promise<DoorEvent[]> {
   if (RING_MODE === "real") return listRecentRingEventsReal(limit);
-  return Array.from({ length: limit }, () => generateMockEvent());
+
+  // Same reasoning as above: if there's already logged activity, there's
+  // nothing genuinely "new" to report, so return nothing rather than
+  // manufacturing `limit` fresh events on every listing request. Only
+  // backfill on a completely empty log, so a brand-new checkout still has
+  // something to show on the very first call.
+  const existing = await listRecentEvents(limit);
+  if (existing.length > 0) return [];
+  return Array.from({ length: Math.min(3, limit) }, () => generateMockEvent());
 }
 
 export function isRealMode(): boolean {

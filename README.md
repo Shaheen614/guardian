@@ -185,6 +185,23 @@ inside the free tier's rate limits during a demo.
   `check_household_activity_pattern` has something to compare against
   immediately; in real use it fills in naturally after a few days of real
   events.
+- **Mock Ring events reuse the "latest" event for a couple of minutes**
+  rather than fabricating a brand-new random visitor on every single
+  question. This matters for two reasons: repeated questions in one
+  conversation get a consistent answer, and — more importantly — it stops
+  every tool call from silently inflating that hour's logged event count,
+  which would otherwise defeat the anomaly baseline the demo scenario
+  depends on. Real mode is unaffected; it always reflects Ring's actual
+  latest event.
+- **Mock-mode vision analysis is grounded in a text scene description, not
+  the placeholder image's pixels.** The mock snapshot is a meaningless 1×1
+  blank PNG (see below) — asking Gemini to describe its actual content
+  produces weak, incoherent answers, which is the last thing you want on
+  camera in a demo. `describe_door_snapshot` detects mock mode and calls
+  `analyzeMockScene()` instead of `analyzeDoorSnapshot()`: it still makes a
+  real Gemini call, just grounded in a short, honest scene description
+  (`mockData.ts`'s `SCENE_HINTS`) instead of uninformative image bytes.
+  Real mode always analyzes actual snapshot pixels.
 - **Mock Ring events** use a 1x1 placeholder image for the "snapshot" so the
   Gemini vision call path is exercised end-to-end even without a camera —
   switch to `RING_MODE=real` to see it work on an actual doorbell image.

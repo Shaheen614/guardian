@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { fetchLatestDoorbellEvent, fetchRecentEvents, isRealMode } from "./services/ring.js";
-import { analyzeDoorSnapshot } from "./services/geminiVision.js";
+import { analyzeDoorSnapshot, analyzeMockScene } from "./services/geminiVision.js";
 import { checkHouseholdActivityPattern } from "./services/anomaly.js";
 import { sendCaregiverNotification } from "./services/notify.js";
 import { appendEvent, listRecentEvents, type DoorEvent } from "./services/store.js";
@@ -40,8 +40,10 @@ export function registerGuardianTools(server: McpServer) {
     "describe_door_snapshot",
     "Uses Gemini (multimodal, free tier) to look at the most recent doorbell " +
       "snapshot and describe who/what is there, classify the visit, and suggest " +
-      "an action. Call get_latest_doorbell_event first if you don't already have " +
-      "a snapshot in hand.",
+      "an action. In mock mode, analyzes a simulated scene description instead " +
+      "of pixel data (see README) since the placeholder image has no real " +
+      "content to see. Call get_latest_doorbell_event first if you don't " +
+      "already have a snapshot in hand.",
     {},
     async () => {
       const event = await fetchLatestDoorbellEvent();
@@ -51,11 +53,17 @@ export function registerGuardianTools(server: McpServer) {
             "always snapshot mid-recording)."
         );
       }
-      const analysis = await analyzeDoorSnapshot(event.snapshotBase64, {
-        cameraName: event.cameraName,
-        eventType: event.type,
-        timestamp: event.timestamp,
-      });
+      const analysis = isRealMode()
+        ? await analyzeDoorSnapshot(event.snapshotBase64, {
+            cameraName: event.cameraName,
+            eventType: event.type,
+            timestamp: event.timestamp,
+          })
+        : await analyzeMockScene(event.mockSceneHint ?? "a routine event at the front door", {
+            cameraName: event.cameraName,
+            eventType: event.type,
+            timestamp: event.timestamp,
+          });
       const enriched: DoorEvent = { ...event, description: analysis.description };
       await appendEvent(enriched);
       return textResult(

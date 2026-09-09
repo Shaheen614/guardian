@@ -56,12 +56,14 @@ ready, the content needs your actual experience.
 - **Would you build with it again:** [fill in]
 
 ### Ring API / Ring Developer Playground / ring-client-api
-- **What we used it for:** fetching real doorbell/motion events and camera
-  snapshots for the vision-analysis pipeline.
-- **What worked well:** [fill in — e.g. Playground's no-account sandbox,
-  simulated event types]
-- **What needs work:** [fill in — e.g. the mandatory snapshot watermark
-  added in June 2026, any auth friction]
+- **What we used it for:** the integration code is written and mode-switches
+  with one env variable (`RING_MODE=real`/`mock`), but this submission was
+  tested in **mock mode** — no physical Ring device was available to test
+  against the real API before the deadline.
+- **What worked well:** [fill in — did `ring-auth-cli` behave sensibly once
+  you had a real account, if you tried it at all?]
+- **What needs work:** [fill in — e.g. account-type friction if you hit the
+  access_denied issue with a social-login Ring account]
 - **Onboarding:** [fill in]
 - **Would you build with it again:** [fill in]
 
