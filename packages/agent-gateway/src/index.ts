@@ -20,7 +20,9 @@ app.post("/chat", async (req, res) => {
     return res.status(400).json({ error: "message is required" });
   }
 
-  const history = sessions.get(sessionId) ?? [];
+  // Work on a copy: if this turn fails, the stored history must not keep a
+  // dangling user message (consecutive user turns confuse the model).
+  const history = [...(sessions.get(sessionId) ?? [])];
   history.push({ role: "user", content: message });
 
   try {

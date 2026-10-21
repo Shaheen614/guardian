@@ -101,6 +101,25 @@ actually record — see the script's comments for how.
   to a 10% judging bonus) — fill it in live as you hit real setup snags.
 - `DEMO_SCRIPT.md` — the video script above.
 
+## Troubleshooting Gemini errors
+
+Seen while building this on a fresh machine, with the fix for each:
+
+| Error in the `dev:agent` window | Cause | Fix |
+| --- | --- | --- |
+| `404 ... no longer available to new users` | Google retired that model name | List usable models (below), set `AGENT_MODEL` / `GEMINI_VISION_MODEL` in `.env`, restart |
+| `503 ... high demand` | Temporary overload | Handled automatically: retries with backoff, then falls back to `AGENT_MODEL_FALLBACKS` |
+| `400 ... missing a thought_signature` | Gemini 3 models require an encrypted "thought signature" on tool calls to be sent back unchanged | Handled in `agentLoop.ts` (model content replayed verbatim, documented bypass as backstop). Needs a recent `@google/genai` — run `npm install` after pulling |
+
+List the models your key can use (does not print the key):
+
+```powershell
+$k = ((Get-Content .env | Select-String '^GEMINI_API_KEY=').Line -split '=',2)[1].Trim()
+(Invoke-RestMethod "https://generativelanguage.googleapis.com/v1beta/models?key=$k").models.name
+```
+
+`.env` is only read at startup, so restart both servers after changing it.
+
 ## Verifying your setup
 
 After `npm install` and setting up `.env`, run:

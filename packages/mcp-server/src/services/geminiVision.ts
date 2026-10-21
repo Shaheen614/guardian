@@ -1,7 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
+import { generateWithFallback, modelChain } from "./geminiRetry.js";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_ID = process.env.GEMINI_VISION_MODEL ?? "gemini-2.0-flash";
+const PRIMARY_MODEL = process.env.GEMINI_VISION_MODEL ?? "gemini-3.8-flash";
+// Tried in order if the primary model is overloaded (503) or retired (404).
+const MODELS = modelChain(
+  PRIMARY_MODEL,
+  process.env.GEMINI_VISION_MODEL_FALLBACKS ?? "gemini-3.5-flash,gemini-flash-latest"
+);
 
 export interface VisionAnalysis {
   description: string;
@@ -29,8 +35,7 @@ export async function analyzeDoorSnapshot(
   snapshotBase64: string,
   context: { cameraName: string; eventType: string; timestamp: string }
 ): Promise<VisionAnalysis> {
-  const response = await ai.models.generateContent({
-    model: MODEL_ID,
+  const { response } = await generateWithFallback(ai, MODELS, {
     contents: [
       {
         role: "user",
@@ -56,7 +61,7 @@ export async function analyzeDoorSnapshot(
     config: {
       systemInstruction: SYSTEM_PROMPT,
       temperature: 0.2,
-      maxOutputTokens: 300,
+      maxOutputTokens: 1024,
     },
   });
 
@@ -89,8 +94,7 @@ export async function analyzeMockScene(
   sceneHint: string,
   context: { cameraName: string; eventType: string; timestamp: string }
 ): Promise<VisionAnalysis> {
-  const response = await ai.models.generateContent({
-    model: MODEL_ID,
+  const { response } = await generateWithFallback(ai, MODELS, {
     contents: [
       {
         role: "user",
@@ -108,7 +112,7 @@ export async function analyzeMockScene(
     config: {
       systemInstruction: MOCK_SYSTEM_PROMPT,
       temperature: 0.4,
-      maxOutputTokens: 300,
+      maxOutputTokens: 1024,
     },
   });
 

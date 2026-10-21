@@ -48,3 +48,26 @@ needed) / minor (annoying but quick to solve) / cosmetic (docs typo etc.)
   has no native password") would save real time for developers hitting
   this on their first attempt.
 
+
+- **Task attempted:** Getting the agent's Gemini tool-calling loop working
+  for the first time on a fresh machine.
+- **Steps taken:** Followed the code as written (default model
+  `gemini-2.0-flash`), then moved through the models Google's errors
+  pointed to.
+- **Expected:** A normal tool-calling round trip.
+- **Actual:** Three separate failures in a row: (1) `404 ... no longer
+  available to new users` for `gemini-2.5-flash` (it still appeared in the
+  `models.list` response for the same key, so the list was misleading);
+  (2) `503 ... high demand` on `gemini-3.8-flash`; (3) `400 ... Function call
+  is missing a thought_signature` once Gemini 3 tool calls started
+  working.
+- **Severity:** Major for (3), minor for (1) and (2). (3) stopped all tool
+  use until the loop was changed to replay the model's response unchanged.
+- **Workaround used:** Model fallback chain + retry with backoff for
+  404/503; replay the model's full response content and use the documented
+  `skip_thought_signature_validator` value if a signature is missing;
+  upgrade `@google/genai` to a current major version.
+- **Suggestion:** Have `models.list` exclude models that return "no longer
+  available" for the calling key, and make the SDK's tool-calling examples
+  show the thought-signature requirement up front — hand-built tool loops
+  hit it on the very first call.
