@@ -1,10 +1,28 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { fetchLatestDoorbellEvent, fetchRecentEvents, isRealMode } from "./services/ring.js";
-import { analyzeDoorSnapshot, analyzeMockScene } from "./services/geminiVision.js";
+import { analyzeDoorSnapshot, analyzeMockScene, type VisionAnalysis } from "./services/geminiVision.js";
 import { checkHouseholdActivityPattern } from "./services/anomaly.js";
 import { sendCaregiverNotification } from "./services/notify.js";
 import { appendEvent, listRecentEvents, type DoorEvent } from "./services/store.js";
+
+/**
+ * Mock-mode fallback when the Gemini call fails: builds a read from the
+ * event's simulated scene description (see mockData.ts) so the demo keeps
+ * working. Only ever used for simulated events, never real footage.
+ */
+function fallbackMockAnalysis(event: DoorEvent): VisionAnalysis {
+  const category: VisionAnalysis["category"] =
+    event.type === "package" ? "delivery"
+    : event.type === "vehicle" ? "vehicle"
+    : event.type === "doorbell_press" ? "visitor"
+    : "unclear";
+  return {
+    description: event.mockSceneHint ?? "Routine activity at the front door.",
+    category,
+    suggestedAction: category === "delivery" ? "Bring the package inside when convenient." : "none needed",
+  };
+}
 
 function textResult(text: string) {
   return { content: [{ type: "text" as const, text }] };
@@ -53,17 +71,28 @@ export function registerGuardianTools(server: McpServer) {
             "always snapshot mid-recording)."
         );
       }
-      const analysis = isRealMode()
-        ? await analyzeDoorSnapshot(event.snapshotBase64, {
-            cameraName: event.cameraName,
-            eventType: event.type,
-            timestamp: event.timestamp,
-          })
-        : await analyzeMockScene(event.mockSceneHint ?? "a routine event at the front door", {
-            cameraName: event.cameraName,
-            eventType: event.type,
-            timestamp: event.timestamp,
-          });
+      const ctx = { cameraName: event.cameraName, eventType: event.type, timestamp: event.timestamp };
+      let analysis: VisionAnalysis;
+      try {
+        analysis = isRealMode()
+          ? await analyzeDoorSnapshot(event.snapshotBase64, ctx)
+          : await analyzeMockScene(event.mockSceneHint ?? "a routine event at the front door", ctx);
+      } catch (err) {
+        // The MCP SDK hands thrown errors back to the agent without printing
+        // anything here, so log it or failures are invisible.
+        console.error("[vision] Gemini analysis failed:", err);
+        if (isRealMode()) {
+          // Never invent a description of a real camera's footage.
+          return textResult(
+            "I couldn't analyze the camera snapshot just now (the vision service had an error). " +
+              "The event itself was logged; try again in a moment."
+          );
+        }
+        // Mock mode: the scene is simulated anyway, so fall back to the built-in
+        // scene description instead of letting a Gemini hiccup break the demo.
+        console.warn("[vision] mock mode: using the built-in scene description instead");
+        analysis = fallbackMockAnalysis(event);
+      }
       const enriched: DoorEvent = { ...event, description: analysis.description };
       await appendEvent(enriched);
       return textResult(
