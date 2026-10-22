@@ -38,13 +38,63 @@ async function checkHealth() {
 }
 checkHealth();
 
+// --- Spoken replies ------------------------------------------------------
+// Browsers load their voice list asynchronously and Chrome silently cuts off
+// long utterances after ~15 seconds, so: pick a good English voice once it
+// is available, speak one sentence at a time, and let the user mute it.
+const muteButton = document.getElementById("muteButton");
+let voiceEnabled = true;
+try {
+  voiceEnabled = localStorage.getItem("guardianVoice") !== "off";
+} catch {}
+
+function renderMute() {
+  muteButton.textContent = voiceEnabled ? "Voice on" : "Voice off";
+  muteButton.setAttribute("aria-pressed", String(voiceEnabled));
+}
+renderMute();
+
+muteButton.addEventListener("click", () => {
+  voiceEnabled = !voiceEnabled;
+  try {
+    localStorage.setItem("guardianVoice", voiceEnabled ? "on" : "off");
+  } catch {}
+  if (!voiceEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  orbButton.classList.remove("speaking");
+  renderMute();
+});
+
+function pickVoice() {
+  const voices = window.speechSynthesis.getVoices().filter((v) => /^en/i.test(v.lang));
+  const prefer = [/natural/i, /google us english/i, /aria|jenny|samantha|zira/i];
+  for (const re of prefer) {
+    const hit = voices.find((v) => re.test(v.name));
+    if (hit) return hit;
+  }
+  return voices.find((v) => /^en-us/i.test(v.lang)) || voices[0] || null;
+}
+
 function speak(text) {
-  if (!("speechSynthesis" in window)) return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1.02;
+  if (!voiceEnabled || !("speechSynthesis" in window)) return;
+  const synth = window.speechSynthesis;
+  synth.cancel(); // never talk over a previous answer
+
+  const sentences = text.match(/[^.!?]+[.!?]*/g)?.map((t) => t.trim()).filter(Boolean) ?? [text];
+  const voice = pickVoice();
   orbButton.classList.add("speaking");
-  utterance.onend = () => orbButton.classList.remove("speaking");
-  window.speechSynthesis.speak(utterance);
+
+  sentences.forEach((sentence, i) => {
+    const utterance = new SpeechSynthesisUtterance(sentence);
+    if (voice) utterance.voice = voice;
+    utterance.lang = voice?.lang ?? "en-US";
+    utterance.rate = 1.0;
+    const done = () => {
+      if (i === sentences.length - 1) orbButton.classList.remove("speaking");
+    };
+    utterance.onend = done;
+    utterance.onerror = done;
+    synth.speak(utterance);
+  });
 }
 
 async function sendMessage(message) {
